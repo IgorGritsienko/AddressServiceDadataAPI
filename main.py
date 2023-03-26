@@ -10,9 +10,6 @@ resource = 'address'
 BASE_URL = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/'
 
 
-API_KEY = ''
-
-
 def get_current_option(param):
     # Подключение к БД и извлечение данных о текущем пользователе
     
@@ -105,6 +102,7 @@ def get_search_params():
     # Получение строки запроса и параметров пользователя
     
     query = get_search_query()
+    # id, url, api, lang
     user_info = get_user_info()
     
     data = {
@@ -189,8 +187,9 @@ def menu():
         user_choice = input('\nВыберите действие: ')
         match user_choice:
             case '1':
+                # user_info: (id, url, api, lang)
                 query, user_info, data = get_search_params()
-                result = search(resource, query, user_info[1], API_KEY, data)
+                result = search(resource, query, user_info[1], user_info[2], data)
                 
                 # проверка на рабочий URL
                 if result:
@@ -214,7 +213,7 @@ def menu():
                         # количество выводимых записей = 1
                         data['query'] = res_list[user_final_choice_num - 1]
                         data['count'] = 1
-                        single_result = search(resource, query, user_info[1], API_KEY, data)
+                        single_result = search(resource, query, user_info[1], user_info[2], data)
                         print_search_results(single_result)
 
             case '2':
