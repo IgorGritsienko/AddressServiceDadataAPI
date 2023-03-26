@@ -4,7 +4,7 @@ import json
 import requests
 
 clear = "\n" * 100
-db_path = './users.db'
+db_path = './users6.db'
 resource = 'address'
 
 BASE_URL = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/'
@@ -87,16 +87,25 @@ def get_user_info():
     conn.close()
     return user_info
 
-def search(resource, query, base_url, api_key, lang):
+
+def get_search_params():
+    query = get_search_query()
+    user_info = get_user_info()
+    
+    data = {
+        'query': query,
+        'language': user_info[3]
+    }
+    
+    return query, user_info, data
+
+
+def search(resource, query, base_url, api_key, data):
     url = base_url + resource
     headers = {
         'Authorization': 'Token ' + api_key,
         'Content-Type': 'application/json',
         'Accept':'application/json'
-    }
-    data = {
-        'query': query,
-        'language': lang
     }
     try:
         res = requests.post(url, data=json.dumps(data), headers=headers)
@@ -106,13 +115,25 @@ def search(resource, query, base_url, api_key, lang):
     return res.json()
 
 
-def print_search_results(res):
+def get_search_results(res):
     if len(res['suggestions']) == 0:
         print ('\nНичего не найдено...')
+        return 0
     else:
-        print('\nМесто: ', res['suggestions'][0]['value'])
-        print('Координаты широты: ', res['suggestions'][0]['data']['geo_lat'])
-        print('Координаты долготы: ', res['suggestions'][0]['data']['geo_lon'])
+        res_list = []
+        
+        for i, j in zip(res['suggestions'], range(10)):
+            row = i['value']
+            print(f'{j+1}: {row}')
+            # удаление апострофов и фигурных скобок для вывода на экран
+            # print(str(res)[1:-1].replace('\'', ''))
+            res_list.append(row)
+        return res_list
+
+def print_search_results(res):
+    print('\nМесто: ', res['suggestions'][0]['value'])
+    print('Координаты широты: ', res['suggestions'][0]['data']['geo_lat'])
+    print('Координаты долготы: ', res['suggestions'][0]['data']['geo_lon'])
 
 
 def options():
@@ -148,11 +169,31 @@ def menu():
         user_choice = input('\nВыберите действие: ')
         match user_choice:
             case '1':
-                query = get_search_query()
-                user_info = get_user_info()
-                res = search(resource, query, user_info[1], API_KEY, user_info[3])
-                if res:
-                    print_search_results(res)
+                query, user_info, data = get_search_params()
+                result = search(resource, query, user_info[1], API_KEY, data)
+                
+                # проверка на рабочий URL
+                if result:
+                    res_list = get_search_results(result)
+                    
+                    # проверка на нахождение данных по запросу
+                    if res_list:
+                        while True:
+                            user_final_choice = input(f'Выберите вариант из предложенных (от 1 до {len(res_list)}): ')
+                            try:
+                                user_final_choice_num = int(user_final_choice)
+                                if (user_final_choice_num >= 1 and user_final_choice_num <= len(res_list)):
+                                    break
+                                else:
+                                    print(f'Введите число от 1 до {len(res_list)}!')
+                            except:
+                                print('Введите число!')
+
+                        data['query'] = res_list[user_final_choice_num - 1]
+                        data['count'] = 1
+                        single_result = search(resource, query, user_info[1], API_KEY, data)
+                        print_search_results(single_result)
+
             case '2':
                 options()
             case '0':
