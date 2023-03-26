@@ -14,16 +14,23 @@ API_KEY = ''
 
 
 def get_current_option(param):
+    # Подключение к БД и извлечение данных о текущем пользователе
+    
     conn = db.create_connection(db_path)
     curr_option = db.select_user_info(conn, param)
     return conn, curr_option
 
 
 def restore_url(conn, param, base_url):
+    # Возврат к базовому URL
+    
     db.update_user(conn, param, base_url)
 
 
 def edit_url(param):
+    # Функция, получающая текущий URL пользователя
+    # и при необходимости изменяющая его
+    
     conn, curr_url = get_current_option(param)
     curr_url = curr_url[0]
     print(f'\nТекущий URL: {curr_url}')
@@ -42,7 +49,9 @@ def edit_url(param):
 
 
 def edit_api(param):
-
+    # Функция, получающая текущий API пользователя
+    # и при необходимости изменяющая его
+    
     conn, curr_api = get_current_option(param)
     curr_api = curr_api[0]
     print(f'\nТекущий API: {curr_api}')
@@ -57,7 +66,9 @@ def edit_api(param):
 
 
 def edit_lang(param):
-
+    # Функция, получающая текущий язык результата запроса пользователя
+    # и при необходимости изменяющая его
+    
     conn, curr_lang = get_current_option(param)
 
     if curr_lang[0] == 'ru':
@@ -83,12 +94,16 @@ def get_search_query():
 
 
 def get_user_info():
+    # Получение всех параметров пользователя
+    
     conn, user_info = get_current_option('_')
     conn.close()
     return user_info
 
 
 def get_search_params():
+    # Получение строки запроса и параметров пользователя
+    
     query = get_search_query()
     user_info = get_user_info()
     
@@ -101,6 +116,8 @@ def get_search_params():
 
 
 def search(resource, query, base_url, api_key, data):
+    # Создание URL, заголовков и отправка запроса
+    
     url = base_url + resource
     headers = {
         'Authorization': 'Token ' + api_key,
@@ -112,21 +129,24 @@ def search(resource, query, base_url, api_key, data):
     except requests.exceptions.RequestException as err:
         print(f'Ошибка!\n{err}')
         return 0
+    
     return res.json()
 
 
 def get_search_results(res):
+    
     if len(res['suggestions']) == 0:
         print ('\nНичего не найдено...')
         return 0
     else:
+        # Создание списка, получающегося при распаковке
+        # (результат - порядковый номер)
+        
         res_list = []
         
         for i, j in zip(res['suggestions'], range(10)):
             row = i['value']
             print(f'{j+1}: {row}')
-            # удаление апострофов и фигурных скобок для вывода на экран
-            # print(str(res)[1:-1].replace('\'', ''))
             res_list.append(row)
         return res_list
 
@@ -181,14 +201,17 @@ def menu():
                         while True:
                             user_final_choice = input(f'Выберите вариант из предложенных (от 1 до {len(res_list)}): ')
                             try:
+                                # перевод строки в число
                                 user_final_choice_num = int(user_final_choice)
+                                # если число удовлетворяет условиям, то выходим из цикла
                                 if (user_final_choice_num >= 1 and user_final_choice_num <= len(res_list)):
                                     break
                                 else:
                                     print(f'Введите число от 1 до {len(res_list)}!')
                             except:
                                 print('Введите число!')
-
+                        # изменяем данные в словаре на конкретную выбранную строкк запроса
+                        # количество выводимых записей = 1
                         data['query'] = res_list[user_final_choice_num - 1]
                         data['count'] = 1
                         single_result = search(resource, query, user_info[1], API_KEY, data)
