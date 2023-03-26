@@ -3,6 +3,7 @@ Getting address coordinates via Dadata API
 
 # Документация ПО AddressServiceDadataAPI
 
+Для работы требуется Python 3.10 и выше.
 
 При запуске программы появится меню, предлагающее следующие варианты действий:
 
