@@ -2,19 +2,26 @@ import os.path
 import sqlite3
 from sqlite3 import Error
 
+
 create_users_table = """
 CREATE TABLE IF NOT EXISTS users(
     user_id INT PRIMARY KEY,
     default_URL TEXT DEFAULT 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/',
     API_key TEXT,
-    language TEXT CHECK (language IN ('ru', 'en'))
+    language TEXT DEFAULT 'ru' CHECK (language IN ('ru', 'en'))
 );
 """
 
 insert_user_table = """
-INSERT INTO users(user_id, API_key, language)
-            VALUES(?, ?, ?);
+INSERT INTO users(user_id, API_key)
+            VALUES(?, ?);
 """
+
+
+class Options:
+    DEFAULT_URL = '1'
+    API_KEY = '2'
+    LANGUAGE = '3'
 
 
 def check_db_existence(db_path):
@@ -43,11 +50,10 @@ def create_table(conn, query):
         print(f'Произошла ошибка: {e}')
 
 
-
-# создание заглушки
+# создание заглушки в виде единственного пользователя с unique id = 1
 def insert_user(conn, query):
     cur = conn.cursor()
-    default_user = ('1', '', 'ru')
+    default_user = ('1', '')
     try:
         cur.execute(query, default_user)
         conn.commit()
@@ -55,16 +61,17 @@ def insert_user(conn, query):
         print(f'Произошла ошибка: {e}')
 
 
+
 def select_user_info(conn, param):
     # вместо авторизации, хардкод идентификатора пользователя, всегда один и тот же
     default_user = 1
 
     match param:
-        case '1':
+        case Options.DEFAULT_URL:
             column_name = 'default_URL'
-        case '2':
+        case Options.API_KEY:
             column_name = 'API_key'
-        case '3':
+        case Options.LANGUAGE:
             column_name = 'language'
         case _:
             column_name = '*'
@@ -85,11 +92,11 @@ def update_user(conn, param, value):
     default_user = 1
 
     match param:
-        case '1':
+        case Options.DEFAULT_URL:
             column_name = 'default_URL'
-        case '2':
+        case Options.API_KEY:
             column_name = 'API_key'
-        case '3':
+        case Options.LANGUAGE:
             column_name = 'language'
 
     update_query = f"UPDATE users SET {column_name} = '{value}' WHERE user_id = {default_user};"

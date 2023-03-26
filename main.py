@@ -3,11 +3,26 @@ import db
 import json
 import requests
 
+resource = 'address'
 clear = "\n" * 100
 db_path = './users.db'
-resource = 'address'
 
-BASE_URL = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/'
+BASE_URL = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/' 
+
+class UserActions:
+    USER_ACTION_DEFAULT_URL = '00'
+    USER_ACTION_BACK = '0'
+    USER_ACTION_EXIT = '0'
+    USER_ACTION_EDIT_URL = '1'
+    USER_ACTION_EDIT_API = '2'
+    USER_ACTION_EDIT_LANG = '3'
+    USER_ACTION_SEARCH = '1'
+    USER_ACTION_GET_OPTIONS = '2'
+    
+class GeoPoint:
+    def __init__(self, geo_lat, geo_lon):
+        self.geo_lat = geo_lat
+        self.geo_lon = geo_lon
 
 
 def get_current_option(param):
@@ -35,10 +50,10 @@ def edit_url(param):
     print('\'0\' для возврата в меню, \'00\' для сброса к базовому URL.')
     new_url = input()
     match new_url:
-        case '0':
-            pass
-        case '00':
+        case UserActions.USER_ACTION_DEFAULT_URL:
             restore_url(conn, param, BASE_URL)
+        case UserActions.USER_ACTION_BACK:
+            pass
         case _:
             db.update_user(conn, param, new_url)
     conn.close()
@@ -54,7 +69,7 @@ def edit_api(param):
     print(f'\nТекущий API: {curr_api}')
     new_api = input('Введите новый API или \'0\' для возвращения в меню:')
     match new_api:
-        case 0:
+        case UserActions.USER_ACTION_BACK:
             pass
         case _:
             db.update_user(conn, param, new_api)
@@ -93,7 +108,7 @@ def get_search_query():
 def get_user_info():
     # Получение всех параметров пользователя
     
-    conn, user_info = get_current_option('_')
+    conn, user_info = get_current_option('*')
     conn.close()
     return user_info
 
@@ -142,16 +157,17 @@ def get_search_results(res):
         
         res_list = []
         
-        for i, j in zip(res['suggestions'], range(10)):
+        for i, j in zip(res['suggestions'], range(len(res['suggestions']))):
             row = i['value']
             print(f'{j+1}: {row}')
             res_list.append(row)
         return res_list
 
-def print_search_results(res):
-    print('\nМесто: ', res['suggestions'][0]['value'])
-    print('Координаты широты: ', res['suggestions'][0]['data']['geo_lat'])
-    print('Координаты долготы: ', res['suggestions'][0]['data']['geo_lon'])
+
+def print_search_results(place, geo_point):
+    print('\nМесто: ', place)
+    print('Координаты широты: ', geo_point.geo_lat)
+    print('Координаты долготы: ', geo_point.geo_lon)
 
 
 def options():
@@ -164,20 +180,19 @@ def options():
 
         user_choice = input('\nВыберите действие: ')
         match user_choice:
-            case '1':
+            case UserActions.USER_ACTION_EDIT_URL:
                 edit_url(user_choice)
-            case '2':
+            case UserActions.USER_ACTION_EDIT_API:
                 edit_api(user_choice)
-            case '3':
+            case UserActions.USER_ACTION_EDIT_LANG:
                 edit_lang(user_choice)
-            case '0':
+            case UserActions.USER_ACTION_BACK:
                 break
             case _:
                 print(clear)
 
 
 def menu():
-    db.check_db_existence(db_path)
     while True:
         print('\nФункционал программы:\n')
         print('1. Получить координаты адреса.')
@@ -186,11 +201,11 @@ def menu():
 
         user_choice = input('\nВыберите действие: ')
         match user_choice:
-            case '1':
+            case UserActions.USER_ACTION_SEARCH:
                 # user_info: (id, url, api, lang)
                 query, user_info, data = get_search_params()
-                result = search(resource, query, user_info[1], user_info[2], data)
                 
+                result = search(resource, query, user_info[1], user_info[2], data)
                 # проверка на рабочий URL
                 if result:
                     res_list = get_search_results(result)
@@ -209,22 +224,31 @@ def menu():
                                     print(f'Введите число от 1 до {len(res_list)}!')
                             except:
                                 print('Введите число!')
+                                
                         # изменяем данные в словаре на конкретную выбранную строкк запроса
                         # количество выводимых записей = 1
                         data['query'] = res_list[user_final_choice_num - 1]
                         data['count'] = 1
                         single_result = search(resource, query, user_info[1], user_info[2], data)
-                        print_search_results(single_result)
+                        
+                        geo_point = GeoPoint(single_result['suggestions'][0]['data']['geo_lat'], 
+                                             single_result['suggestions'][0]['data']['geo_lon'])
+                        
+                        place = single_result['suggestions'][0]['value']
+                        
+                        print_search_results(place, geo_point)
 
-            case '2':
+            case UserActions.USER_ACTION_GET_OPTIONS:
                 options()
-            case '0':
+            case UserActions.USER_ACTION_EXIT:
                 break
             case _:
                 print(clear)
     print('\nПрограмма завершила свою работу.\n')
 
+
 def main():
+    db.check_db_existence(db_path)
     menu()
 
 
