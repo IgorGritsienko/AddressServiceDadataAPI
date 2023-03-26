@@ -5,7 +5,7 @@ import requests
 
 resource = 'address'
 clear = "\n" * 100
-db_path = './users.db'
+db_path = './users5.db'
 
 BASE_URL = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/' 
 
@@ -128,7 +128,7 @@ def get_search_params():
     return query, user_info, data
 
 
-def search(resource, query, base_url, api_key, data):
+def search(resource, base_url, api_key, data):
     # Создание URL, заголовков и отправка запроса
     
     url = base_url + resource
@@ -148,20 +148,24 @@ def search(resource, query, base_url, api_key, data):
 
 def get_search_results(res):
     
-    if len(res['suggestions']) == 0:
-        print ('\nНичего не найдено...')
+    try:
+        if len(res['suggestions']) == 0:
+            print ('\nНичего не найдено...')
+            return 0
+        else:
+            # Создание списка, получающегося при распаковке
+            # (результат - порядковый номер)
+            
+            res_list = []
+            
+            for i, j in zip(res['suggestions'], range(len(res['suggestions']))):
+                row = i['value']
+                print(f'{j+1}: {row}')
+                res_list.append(row)
+            return res_list
+    except:
+        print('\nНеверный API.')
         return 0
-    else:
-        # Создание списка, получающегося при распаковке
-        # (результат - порядковый номер)
-        
-        res_list = []
-        
-        for i, j in zip(res['suggestions'], range(len(res['suggestions']))):
-            row = i['value']
-            print(f'{j+1}: {row}')
-            res_list.append(row)
-        return res_list
 
 
 def print_search_results(place, geo_point):
@@ -177,7 +181,7 @@ def options():
         print('2. Редактировать API ключ.')
         print('3. Выбрать язык результата запроса.\n Русский - "ru" \n Английский - "en"')
         print('0. Назад.')
-
+        
         user_choice = input('\nВыберите действие: ')
         match user_choice:
             case UserActions.USER_ACTION_EDIT_URL:
@@ -205,7 +209,7 @@ def menu():
                 # user_info: (id, url, api, lang)
                 query, user_info, data = get_search_params()
                 
-                result = search(resource, query, user_info[1], user_info[2], data)
+                result = search(resource, user_info[1], user_info[2], data)
                 # проверка на рабочий URL
                 if result:
                     res_list = get_search_results(result)
@@ -229,7 +233,7 @@ def menu():
                         # количество выводимых записей = 1
                         data['query'] = res_list[user_final_choice_num - 1]
                         data['count'] = 1
-                        single_result = search(resource, query, user_info[1], user_info[2], data)
+                        single_result = search(resource, user_info[1], user_info[2], data)
                         
                         geo_point = GeoPoint(single_result['suggestions'][0]['data']['geo_lat'], 
                                              single_result['suggestions'][0]['data']['geo_lon'])
