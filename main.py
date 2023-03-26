@@ -4,7 +4,7 @@ import json
 import requests
 
 clear = "\n" * 100
-db_path = './users6.db'
+db_path = './users.db'
 resource = 'address'
 
 BASE_URL = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/'
