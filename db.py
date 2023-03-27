@@ -76,11 +76,12 @@ def select_user_info(conn, param):
         case _:
             column_name = '*'
 
-    select_query = f"SELECT {column_name} FROM users WHERE user_id = {default_user};"
+    select_query = f"SELECT {column_name} FROM users WHERE user_id = ?;"
+    select_query_params = (default_user,)
     cur = conn.cursor()
 
     try:
-        cur.execute(select_query)
+        cur.execute(select_query, select_query_params)
         res = cur.fetchone()
         return res
     except Error as e:
@@ -99,11 +100,12 @@ def update_user(conn, param, value):
         case Options.LANGUAGE:
             column_name = 'language'
 
-    update_query = f"UPDATE users SET {column_name} = '{value}' WHERE user_id = {default_user};"
+    update_query = f"UPDATE users SET {column_name} = ? WHERE user_id = ?;"
     cur = conn.cursor()
+    update_query_params = (value, default_user)
 
     try:
-        cur.execute(update_query)
+        cur.execute(update_query, update_query_params)
         conn.commit()
     except Error as e:
         print(f"Произошла ошибка: {e}")
