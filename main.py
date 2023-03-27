@@ -2,10 +2,11 @@
 import db
 import json
 import requests
+from dataclasses import dataclass
 
-resource = 'address'
-clear = "\n" * 100
-db_path = './users.db'
+RESOURCE = 'address'
+CLEAR = "\n" * 100
+DB_PATH = './users.db'
 
 BASE_URL = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/' 
 
@@ -19,16 +20,17 @@ class UserActions:
     USER_ACTION_SEARCH = '1'
     USER_ACTION_GET_OPTIONS = '2'
     
+    
+@dataclass
 class GeoPoint:
-    def __init__(self, geo_lat, geo_lon):
-        self.geo_lat = geo_lat
-        self.geo_lon = geo_lon
+    geo_lat: float
+    geo_lon: float
 
 
 def get_current_option(param):
     # Подключение к БД и извлечение данных о текущем пользователе
     
-    conn = db.create_connection(db_path)
+    conn = db.create_connection(DB_PATH)
     curr_option = db.select_user_info(conn, param)
     return conn, curr_option
 
@@ -128,10 +130,10 @@ def get_search_params():
     return query, user_info, data
 
 
-def search(resource, base_url, api_key, data):
+def search(RESOURCE, base_url, api_key, data):
     # Создание URL, заголовков и отправка запроса
     
-    url = base_url + resource
+    url = base_url + RESOURCE
     headers = {
         'Authorization': 'Token ' + api_key,
         'Content-Type': 'application/json',
@@ -193,7 +195,7 @@ def options():
             case UserActions.USER_ACTION_BACK:
                 break
             case _:
-                print(clear)
+                print(CLEAR)
 
 
 def menu():
@@ -209,7 +211,7 @@ def menu():
                 # user_info: (id, url, api, lang)
                 query, user_info, data = get_search_params()
                 
-                result = search(resource, user_info[1], user_info[2], data)
+                result = search(RESOURCE, user_info[1], user_info[2], data)
                 # проверка на рабочий URL
                 if result:
                     res_list = get_search_results(result)
@@ -233,7 +235,7 @@ def menu():
                         # количество выводимых записей = 1
                         data['query'] = res_list[user_final_choice_num - 1]
                         data['count'] = 1
-                        single_result = search(resource, user_info[1], user_info[2], data)
+                        single_result = search(RESOURCE, user_info[1], user_info[2], data)
                         
                         geo_point = GeoPoint(single_result['suggestions'][0]['data']['geo_lat'], 
                                              single_result['suggestions'][0]['data']['geo_lon'])
@@ -247,12 +249,12 @@ def menu():
             case UserActions.USER_ACTION_EXIT:
                 break
             case _:
-                print(clear)
+                print(CLEAR)
     print('\nПрограмма завершила свою работу.\n')
 
 
 def main():
-    db.check_db_existence(db_path)
+    db.check_db_existence(DB_PATH)
     menu()
 
 
